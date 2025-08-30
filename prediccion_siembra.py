@@ -2,44 +2,77 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
+import tkinter as tk
+from tkinter import ttk, messagebox
 
-#aca pongo datos random para entrenar a la ia (deberian ir datos chequeados climaticos etc)
+# Datos de ejemplo
 data = {
     "Cultivo": ["soja", "soja", "maiz", "maiz", "trigo", "trigo", "soja", "maiz", "trigo"],
     "Mes": [10, 11, 9, 12, 5, 6, 12, 9, 7],
     "Lluvia_mm": [120, 140, 90, 110, 60, 70, 130, 100, 80],
     "Temp_prom": [20, 22, 25, 28, 15, 17, 21, 26, 16],
-    "Rendimiento": [3.2, 3.5, 4.1, 3.0, 2.5, 2.8, 3.6, 4.0, 2.7]
+    "Rendimiento": [3.2, 3.5, 4.1, 3.0, 2.5, 2.8, 3.6, 4.0, 2.7],
 }
-df = pd.DataFrame(data) #clase de pandas para crear la data en una matriz
-print("\n--- Dataset ---")
-print(df)
 
-# sklearn con la clase labelencoder convierne todos los strings a numeros, para que nuestro modelo de ml entienda
-encoder = LabelEncoder() #clase que tiene metodos que convierten strings en numeros para que el modelo lo entienda, le da un numero q cada string, como si fuese un """id"""
-df["Cultivo_cod"] = encoder.fit_transform(df["Cultivo"]) #transforma el cultivo (string) en un numero por primera vez
-print("\n--- Dataset con codificación ---")
-print(df)
+df = pd.DataFrame(data)
 
-X = df[["Cultivo_cod", "Mes", "Lluvia_mm", "Temp_prom"]] #variables que usamos para predecir
-y = df["Rendimiento"] #lo que queremos predecir
+encoder = LabelEncoder()
+df["Cultivo_cod"] = encoder.fit_transform(df["Cultivo"])
 
-# una vez separadas x de y , preparo un modelo para predecir, pasandole una x y una y para la prediccion(test), y otra x e y para que aprenda a predecir(train)
+X = df[["Cultivo_cod", "Mes", "Lluvia_mm", "Temp_prom"]]
+y = df["Rendimiento"]
+
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-modelo = LinearRegression() #regresion lineal es un modelo tipico de ML, una forma de predecir
-modelo.fit(X_train, y_train) #metodo de sklearn que entrena al modelo con los datos historicos (harcodeados en nuestro caso)
-score = modelo.score(X_test, y_test) #devuelve un numero que representa que tan bien predijo los datos
+modelo = LinearRegression()
+modelo.fit(X_train, y_train)
+score = modelo.score(X_test, y_test)
 print(f"\nPrecisión del modelo: {score:.2f}")
 
-# rutina para hacer predicciones con los datos q le pasas por parametro
-def predecir_rendimiento(cultivo, mes, lluvia, temp):
-    cultivo_cod = encoder.transform([cultivo])[0] #el transform te devuevle el numero q se le asigno al string con el fit.transform 
-    rend_pred = modelo.predict([[cultivo_cod, mes, lluvia, temp]]) #en base a todo lo que aprendio el modelo con el .fit , predice
-    print(f"Predicción de rendimiento para {cultivo} en mes {mes}: {rend_pred[0]:.2f} toneladas/ha")
-    if rend_pred[0] > 3.0:
-        print("✅ Buena fecha de siembra")
-    else:
-        print("⚠️ No es la mejor fecha")
-    return rend_pred[0]
 
-predecir_rendimiento("soja", 11, 130, 21)
+def predecir_rendimiento(cultivo, mes, lluvia, temp):
+    cultivo_cod = encoder.transform([cultivo])[0]
+    rend_pred = modelo.predict([[cultivo_cod, mes, lluvia, temp]])[0]
+    return rend_pred, rend_pred > 3.0
+
+
+def mostrar_prediccion():
+    cultivo = cultivo_var.get()
+    try:
+        mes = int(mes_var.get())
+        lluvia = float(lluvia_var.get())
+        temp = float(temp_var.get())
+    except ValueError:
+        messagebox.showerror("Error", "Ingrese valores numéricos válidos")
+        return
+
+    pred, buena_fecha = predecir_rendimiento(cultivo, mes, lluvia, temp)
+    mensaje = f"Rendimiento estimado: {pred:.2f} toneladas/ha\n"
+    mensaje += "✅ Buena fecha de siembra" if buena_fecha else "⚠️ No es la mejor fecha"
+    result_label.config(text=mensaje)
+
+
+root = tk.Tk()
+root.title("Predicción de Siembra")
+
+cultivo_var = tk.StringVar(value="soja")
+mes_var = tk.StringVar()
+lluvia_var = tk.StringVar()
+temp_var = tk.StringVar()
+
+ttk.Label(root, text="Cultivo").grid(row=0, column=0, sticky="e")
+ttk.Combobox(root, textvariable=cultivo_var, values=["soja", "maiz", "trigo"], state="readonly").grid(row=0, column=1)
+
+ttk.Label(root, text="Mes").grid(row=1, column=0, sticky="e")
+ttk.Entry(root, textvariable=mes_var).grid(row=1, column=1)
+
+ttk.Label(root, text="Lluvia (mm)").grid(row=2, column=0, sticky="e")
+ttk.Entry(root, textvariable=lluvia_var).grid(row=2, column=1)
+
+ttk.Label(root, text="Temp (°C)").grid(row=3, column=0, sticky="e")
+ttk.Entry(root, textvariable=temp_var).grid(row=3, column=1)
+
+ttk.Button(root, text="Predecir", command=mostrar_prediccion).grid(row=4, column=0, columnspan=2, pady=5)
+result_label = ttk.Label(root, text="", font=("Arial", 12))
+result_label.grid(row=5, column=0, columnspan=2)
+
+root.mainloop()
