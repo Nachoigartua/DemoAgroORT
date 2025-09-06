@@ -9,3 +9,6 @@ redis
 structlog
 celery
 pytest
+joblib
+scikit-learn
+xgboost
