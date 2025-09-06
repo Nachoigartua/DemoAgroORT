@@ -1,6 +1,7 @@
 from sqlalchemy import Column, String, Float, Date, TIMESTAMP, Boolean, JSON, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID, BYTEA
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.sql import func
 import uuid
 
 Base = declarative_base()
@@ -11,7 +12,7 @@ class Prediccion(Base):
     lote_id = Column(UUID(as_uuid=True))
     tipo_prediccion = Column(String(50))
     resultado = Column(JSON)
-    fecha_creacion = Column(TIMESTAMP)
+    fecha_creacion = Column(TIMESTAMP, server_default=func.now())
 
 class ClimaHistorico(Base):
     __tablename__ = 'clima_historico'

@@ -1,4 +1,5 @@
-version: '3.8'
+version: "3.8"
+
 services:
   ml-backend:
     build: ../backend
@@ -8,8 +9,11 @@ services:
       - DATABASE_URL=postgresql://user:password@postgres:5432/ml_agro
       - REDIS_URL=redis://redis:6379
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
   postgres:
     image: postgres:13
     environment:
@@ -20,9 +24,16 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d ml_agro"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   redis:
     image: redis:alpine
     ports:
       - "6379:6379"
+
 volumes:
   postgres_data:
