@@ -92,7 +92,8 @@ def prediccion_clima(req: ClimaRequest, x_api_key: str | None = Header(default=N
     lat = req.coords.latitud; lon = req.coords.longitud
     with conn:
         with conn.cursor() as cur:
-            cur.execute(\"\"\"\
+            # --- CORRECCIÓN AQUÍ --- Se eliminó la barra '\' antes de """
+            cur.execute("""
                 SELECT
                   AVG((temperatura_max+temperatura_min)/2.0) AS temp_media,
                   AVG(precipitacion) AS precip,
@@ -103,7 +104,7 @@ def prediccion_clima(req: ClimaRequest, x_api_key: str | None = Header(default=N
                 WHERE round(latitud::numeric,2)=round(%s::numeric,2)
                   AND round(longitud::numeric,2)=round(%s::numeric,2)
                   AND fecha >= CURRENT_DATE - INTERVAL '7 days'
-            \"\"\", (lat, lon))
+            """, (lat, lon))
             row = cur.fetchone()
     conn.close()
     if not row or row["temp_media"] is None:
@@ -152,7 +153,8 @@ def prediccion_rendimiento(req: RendimientoRequest, x_api_key: str | None = Head
                 cur.execute("SELECT materia_organica FROM caracteristicas_suelo WHERE lote_id=%s ORDER BY id DESC LIMIT 1", (req.lote_id,))
                 sr = cur.fetchone()
                 if sr and sr.get("materia_organica"): mo = float(sr["materia_organica"])
-            cur.execute(\"\"\"\
+            # --- CORRECCIÓN AQUÍ --- Se eliminó la barra '\' antes de """
+            cur.execute("""
                 SELECT
                   AVG((temperatura_max+temperatura_min)/2.0) AS temp_media,
                   AVG(precipitacion) AS precip
@@ -160,7 +162,7 @@ def prediccion_rendimiento(req: RendimientoRequest, x_api_key: str | None = Head
                 WHERE round(latitud::numeric,2)=round(%s::numeric,2)
                   AND round(longitud::numeric,2)=round(%s::numeric,2)
                   AND fecha >= CURRENT_DATE - INTERVAL '7 days'
-            \"\"\", (lat, lon))
+            """, (lat, lon))
             cr = cur.fetchone()
             if cr:
                 if cr.get("temp_media") is not None: temp = float(cr["temp_media"])
